@@ -55,6 +55,14 @@ void *myCalloc(int num, int memory) {
 	return myptr;
 }
 
+struct Node *cons(int data, struct Node *lst) {
+	struct Node *ptr = myCalloc(1 ,sizeof(struct Node));
+	ptr->first = data;
+	ptr->rest = lst;
+	return ptr;
+};
+
+
 void freeHolder(struct Holder *res) {
 	//printf("ur mom\n");
 	for (int i = 0; i < 20; i++) {
@@ -110,11 +118,15 @@ int comp2(int arr[], int arr2[]) {
 }
 
 void printBoard(int bd[]) {
+	struct Node *white = 0;
+	struct Node *black = 0;
 	for (int j = 0; j < 15; j++) {
 		for (int k = 0; k < 15; k++) {
 			if (bd[j*15 + k] == 1) {
+				white = cons(j*15 + k + 1 , white);
 				printf("  X  ");
 			} else if (bd[j*15 + k] == 2) {
+				black = cons(j*15 + k + 1, black);
 				printf("  O  ");
 			} else if (j*15 + k < 10) {
 				printf("  %d  ", j*15 + k);
@@ -126,6 +138,14 @@ void printBoard(int bd[]) {
 		};
 		printf("\n\n");
 	}; 
+	for (; white; white = white->rest) {
+		printf("cons(%d, ", white->first);
+	}
+	printf("\n");
+	for (; black; black = black->rest) {
+		printf("cons(%d, ", black->first);
+	}
+	printf("\n");
 };
 
 void printThreats(struct Threat *tlst, int d) {
@@ -1103,12 +1123,6 @@ void removDups(struct Threat *lst, int lol[]) {
 	};
 };
 
-struct Node *cons(int data, struct Node *lst) {
-	struct Node *ptr = myCalloc(1 ,sizeof(struct Node));
-	ptr->first = data;
-	ptr->rest = lst;
-	return ptr;
-};
 
 void TSSh(struct Threat *lst, int board[], int player, int line[], int *done, int *costs[], int types[], int max) {
 	int op = 1 + (player % 2);
