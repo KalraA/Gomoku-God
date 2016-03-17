@@ -5,6 +5,15 @@
 #include <string.h>
 #include <assert.h>
 
+int turn = 0;
+int* *tstranstable = 0;
+int *tsinitTransptr = 0;
+int *tstransptr = 0;
+int tstransint = 0;
+int* *transtable = 0;
+int *initTransptr = 0;
+int *transptr = 0;
+int transint = 0;
 int *initptr = 0;
 int *initptr2 = 0;
 int *initptr3 = 0;
@@ -34,6 +43,89 @@ struct Threat {
 	struct Threat *next;
 	struct Threat *comb;
 };
+
+void *myTransCalloc() {
+	int *myptr = transptr;
+	transptr += 912;
+	return myptr;
+}
+
+void *myTSTransCalloc() {
+	int *myptr = tstransptr;
+	tstransptr += 912;
+	return myptr;
+}
+
+void addToTSTrans(int board[]) {
+	//printf("ADDED!! %d\n", transint);
+	if (tstransint < 100000) {
+		int *newBoard = myTSTransCalloc();
+		for (int i = 0; i < 225; i++) {
+			newBoard[i] = board[i];
+		}
+		tstranstable[tstransint] = newBoard;
+		tstransint += 1;
+	} else {
+		printf("yoo!\n");
+	}
+}
+
+void addToTrans(int board[], int score) {
+	//printf("ADDED!! %d\n", transint);
+	if (transint < 100000) {
+		int *newBoard = myTransCalloc();
+		for (int i = 0; i < 225; i++) {
+			newBoard[i] = board[i];
+		}
+		newBoard[225] = score;
+		transtable[transint] = newBoard;
+		transint += 1;
+	} else {
+		printf("yoo!\n");
+	}
+}
+
+int inTable(int board[]) {
+	int i = 0;
+	int bob = 1;
+	int score = 0;
+	while (i < transint && bob) {
+		if (transtable[i] != 0) {
+			bob = 0;
+			for (int j = 112; j >= 0; j++) {
+				if (board[j] != transtable[i][j] || board[224 - j] != transtable[i][224 - j]) {
+					bob = 1;
+					break;
+				}
+				if (j == 224) {
+					score = transtable[i][j+1];
+				}
+			}
+		}
+		i++;
+	}
+	return score;
+}
+
+int inTSTable(int board[]) {
+	printf("tstransint: %d\n", tstransint);
+	int i = 0;
+	int bob = 1;
+	int score = 0;
+	while (i < tstransint && bob) {
+		if (tstranstable[i] != 0) {
+			bob = 0;
+			for (int j = 0; j < 225; j++) {
+				if (board[j] != tstranstable[i][j]) {
+					bob = 1;
+					break;
+				}
+			}
+		}
+		i++;
+	}
+	return 1-bob;
+}
 
 void *myCalloc(int num, int memory) {
 	int *myptr = currptr;
@@ -218,7 +310,7 @@ struct Threat *isThreat(int move, int board[], int player, int max) {
 			int blank = -1;
 			int blank2 = -1;
 			int prev = 0;
-			int *typee = myCalloc(5, sizeof(int));
+			int *typee = calloc(5, sizeof(int));
 			for (int g = 0; g < 5; g++) {
 				typee[g] = 0;
 			}
@@ -367,7 +459,7 @@ struct Threat *isThreat(int move, int board[], int player, int max) {
 						}
 					}
 				}
-				//free(typee);
+				free(typee);
 			}
 		};
 	};
@@ -380,7 +472,7 @@ struct Threat *findThreats(int board[], int player, int pot[], int checkables[],
 		if (board[sqr] == player) {
 			int sqrRow = sqr % 15;
 			int sqrCol = sqr / 15;
-			int *blanks = myCalloc(4 ,sizeof(int));
+			int *blanks = calloc(4 ,sizeof(int));
 			for (int move = 1; move < 5; move++) {
 				for (int coe = -1; coe < 2; coe += 2) {
 					for (int m = 0; m < 4; m++) {
@@ -404,7 +496,7 @@ struct Threat *findThreats(int board[], int player, int pot[], int checkables[],
 					};
 				};
 			};
-			//free(blanks);
+			free(blanks);
 		};
 	};
 	for (int z = 0; z < 225; z++){
@@ -534,6 +626,10 @@ int safe(int bd[], int line[], int *costs[], int types[], int player, int d, int
 struct Threat *depThreats(int board[], int move, int cost[], int typez, int player, int depth, int line[], int *costs[], int types[], int *done, int inD, int max){
 	int *arr = myCalloc(5 ,sizeof(int));
 	board[move] = player;
+	// if (inTable(board)) {
+	// 	board[move] = 0;
+	// 	return NULL;
+	// };
 	for (int j = 0; j < 4; j++) {
 		if (cost[j] != -1){
 			board[cost[j]] = 1 + (player%2);
@@ -966,13 +1062,16 @@ struct Threat *depThreats(int board[], int move, int cost[], int typez, int play
 		}
 	}
 	if (!*done) {
-			//printf("yolo\n");
+		//printf("yolo\n");
 
 		costs[depth] = NULL;
 		types[depth] = -1;
 		line[depth] = -1;
 	}
 	//free(arr);
+	// if (!*done) {
+	// 	addToTrans(board);
+	// }
 	board[move] = 0;
 	return tt;
 
@@ -1173,20 +1272,22 @@ void TSSh(struct Threat *lst, int board[], int player, int line[], int *done, in
 };
 
 struct Holder *TSS(int board[], int player, int max) {
-	int tExists = 1;
+	//int predone = inTSTable(board);
+	//printf("predone %d\n", predone);
 //	struct Threat *threatzz = NULL;
 //	struct Threat *com;
 //	printf("yolo\n");
+	int tExists = 1;
 	//struct Threat *comT;
 	//threatz = findThreats(board, player, pots, dontTouch);
 	int *done = myCalloc(1 ,sizeof(int));
 	*done = 0;
 	int *line = myCalloc(20 ,sizeof(int));
 	int *(*costs) = myCalloc(20 ,sizeof(int*));
-	int *types = myCalloc(20 ,sizeof(int));
-	int *compArray = myCalloc(225 ,sizeof(int));
-	int *dontTouch = myCalloc(225 ,sizeof(int));
-	int *pots = myCalloc(4 ,sizeof(int));
+	int *types = calloc(20 ,sizeof(int));
+	int *compArray = calloc(225 ,sizeof(int));
+	int *dontTouch = calloc(225 ,sizeof(int));
+	int *pots = calloc(4 ,sizeof(int));
 	for (int i = 0; i < 20; i++) {
 		// printf("%d\n", i);
 		// printf("line\n");
@@ -1196,6 +1297,13 @@ struct Holder *TSS(int board[], int player, int max) {
 		//printf("type\n");
 		types[i] = -1;
 	}
+	// if (predone) {
+	// 	struct Holder *ans = myCalloc(1 ,sizeof(struct Holder));
+	// 	ans->fEval = *done;
+	// 	ans->wLine = line;
+	// 	ans->wCosts = costs;
+	// 	return ans;	
+	// }
 	struct Threat *bob = findThreats(board, player, pots, dontTouch, max);
 	struct Threat *threatzz = 0;
 	struct Threat *comT = 0;
@@ -1229,14 +1337,17 @@ struct Holder *TSS(int board[], int player, int max) {
 	// 		}
 	// 	}
 	// }
+	// if (!(*done)) {
+	// 	addToTSTrans(board);
+	// }
 	struct Holder *ans = myCalloc(1 ,sizeof(struct Holder));
 	ans->fEval = *done;
 	ans->wLine = line;
 	ans->wCosts = costs;
-	//free(types);
-	//free(compArray);
-	//free(dontTouch);
-	//free(pots);
+	free(types);
+	free(compArray);
+	free(dontTouch);
+	free(pots);
 	return ans;
 };
 
@@ -1273,7 +1384,7 @@ int analyze(int move, int board[], int player) {
 	int p = 0;
 	int sqrCol = move/15;
 	int sqrRow = move % 15;
-	int *arr = myCalloc(5 ,sizeof(int));
+	int *arr = calloc(5 ,sizeof(int));
 	int op = 1 + (player % 2);
 	//printf("hi\n");
 	for (int i = 0; i < 4; i++) {
@@ -1316,8 +1427,8 @@ int analyze(int move, int board[], int player) {
 			//printf("%d %d %d\n", me, you, blanks);
 			if (me == 5) {
 				score += 1000000;
-			} else if (you == 4) {
-				score += 11000;
+			} else if (you == 4 && me == 1) {
+				score += 100000;
 			} else if (you == 3 && me == 1 &&blanks == 1) {
 				score += 8000;
 			} else if (you == 2 && me == 1 &&blanks == 2) {
@@ -1344,6 +1455,7 @@ int analyze(int move, int board[], int player) {
 		};
 
 	};
+	free(arr);
 	return score;
 }
 
@@ -1367,36 +1479,28 @@ void insertInto(int scrs[], int mvs[], int scr, int mv, int n) {
 }
 
 int evalBoard(int board[], int player) {
-	struct Holder *Win = TSS(board, player, 3);
 	int score = 0;
 	int pos = player*2 - 3;
-	if (Win->fEval == 1) {
-		//printf("hi\n");
-		score = pos*10000;
-	} else {
-		struct Holder *Opp = TSS(board, 1 + (player % 2), 3);
-		if (Opp->fEval == 1) {
-			score = -1*pos*6000;
-		}
-		int *checks = myCalloc(225, sizeof(int));
-		int *pots = myCalloc(4, sizeof(int));
-		struct Threat *myThreats = findThreats(board, player, pots, checks, 3);
-		struct Threat *yourThreats = findThreats(board, 1 + (player % 2), pots, checks, 3);
-		for (; yourThreats; yourThreats = yourThreats->next) {
-			score -= pos*100;
-		}
-		for (; myThreats; myThreats = myThreats->next) {
-			score += pos*115;
-		}
+	int *checks = calloc(225, sizeof(int));
+	int *pots = calloc(4, sizeof(int));
+	struct Threat *myThreats = findThreats(board, player, pots, checks, 3);
+	struct Threat *yourThreats = findThreats(board, 1 + (player % 2), pots, checks, 3);
+	for (; yourThreats; yourThreats = yourThreats->next) {
+		score -= pos*100;
 	}
+	for (; myThreats; myThreats = myThreats->next) {
+		score += pos*100;
+	}
+	free(checks);
+	free(pots);
 	return score;
 }
 
 int *bmoves(int n, int board[], int player, int checks[]) {
-	int *bestMoves = myCalloc(n, sizeof(int));
-	int *scrToBeat = myCalloc(n, sizeof(int));
+	int *bestMoves = calloc(n, sizeof(int));
+	int *scrToBeat = calloc(n, sizeof(int));
 	int *pots = calloc(4, sizeof(int));
-	struct Threat *threat = findThreats(board, player, checks, pots, 3);
+	struct Threat *threat = findThreats(board, player, pots, checks, 3);
 	for (; threat; threat = threat->next) {
 		int move = threat->gain;
 		int scr = 2000000;
@@ -1424,13 +1528,21 @@ int *bmoves(int n, int board[], int player, int checks[]) {
 			insertInto(scrToBeat, bestMoves, scr, i, n);
 		}
 	}
+	free(scrToBeat);
 	return bestMoves;
 }
 
 int minimax(int board[], int player, int depth, int maxDepth, int nums, int a, int b) {
+	if (depth > 0) {
+		int scoree = inTable(board);
+		if (scoree) {
+			//printf("DID IT!!!\n");
+			return scoree;
+		}
+	}
 	int bestMove = -1;
 	int bestScore = 0;
-	int *checks = myCalloc(225, sizeof(int));
+	int *checks = calloc(225, sizeof(int));
 	// int *pots = myCalloc(4, sizeof(int));
 	// struct Threat *opThreats =  findThreats(board, 1 + (player % 2), pots, checks, 3);
 	// if (opThreats != NULL) {
@@ -1472,12 +1584,12 @@ int minimax(int board[], int player, int depth, int maxDepth, int nums, int a, i
 			} else {
 				if (i > 0) {
 					if (player == 1) {
-						score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums - 3, a, bestScore);
+						score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums, a, bestScore);
 					} else {
-						score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums - 3, bestScore, b);
+						score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums, bestScore, b);
 					}
 				} else {
-					score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums - 3, a, b);					
+					score = minimax(board, 1 + (player % 2), depth + 1, maxDepth, nums, a, b);					
 				}
 			}
 		} else {
@@ -1493,10 +1605,18 @@ int minimax(int board[], int player, int depth, int maxDepth, int nums, int a, i
 			break;
 		}
 	}
+	free(checks);
+	currptr = initptr;
+	currptr2 = initptr2;
+	currptr3 = initptr3;
+	free(lst);
 	if (depth == 0) {
 		printf("hi\n");
+				printf("SCORE = %d\n", bestScore);
 		return bestMove;
 	} else {
+		addToTrans(board, bestScore);
+
 		return bestScore;
 	}
 }
@@ -1576,8 +1696,12 @@ int aiMove(int board[], int player) {
 	// 	}
 	// }
 	// printf("HIIII\n");
-	return minimax(board, 2, 0, 3, 15, -20000000, 20000000);
-	return 0;
+	turn ++;
+	if (turn < 3) {
+		return minimax(board, 2, 0, 5, 7, -20000000, 20000000);		
+	} else {
+		return minimax(board, 2, 0, 5, 8, -20000000, 20000000);
+	}
 }
 
 void runGame() {
@@ -1615,6 +1739,8 @@ void runGame() {
 	currptr = initptr;
 	currptr2 = initptr2;
 	currptr3 = initptr3;
+	transptr = initTransptr;
+	memset(transtable, 0, 800000);
 	}
 	//free(board);
 }
@@ -1632,20 +1758,29 @@ int main() {
 	currptr3 = initptr3;
 	maxptr3 = currptr3 + 1024*1024*1024/4;
 
+	transtable = calloc(100000, 8);
+	transptr = malloc(100000*228*4);
+	initTransptr = transptr;
+	
+	tstranstable = calloc(100000, 8);
+	tstransptr = malloc(100000*228*4);
+	tsinitTransptr = tstransptr;
+	
 
+	// printf("transtable: %d\n", transtable);
 	// int *board = myCalloc(1 ,sizeof(int)*225);
-	// // struct Node *black = cons(111, cons(142, cons(158, cons(159, cons(129, 0)))));
-	// // struct Node *white = cons(126, cons(141, cons(156, cons(128, cons(145, 0)))));
+	// //struct Node *black = cons(111, cons(142, cons(158, cons(159, cons(129, 0)))));
+	// //struct Node *white = cons(126, cons(141, cons(156, cons(128, cons(145, 0)))));
 	// // struct Node *black = cons(97, cons(98, cons(99, cons(98+15, cons(128, cons(127, cons(129, cons(127+15, cons(157, cons(156, cons(158,  0)))))))))));
 	// // struct Node *white = cons(96, cons(96+15, cons(96+30, cons(96+45, cons(96+60-1, cons(97+75, cons(98+45, cons(145, cons(130, cons(114, cons(97+15, 0)))))))))));
-	// // struct Node *black = cons(47, cons(49, cons(62, cons(66, cons(80, cons(95, cons(96, cons(92, cons(96+16, cons(96+32, 0))))))))));
-	// // struct Node *white = cons(50, cons(65, cons(64, cons(63, cons(78, cons(77, cons(81, cons(97, cons(98, cons(98+46, cons(4, cons(1, cons(2, cons(220, 0))))))))))))));
-	// struct Node *white = cons(97, cons(83, cons(100, 0)));
-	// struct Node *black = cons(67, cons(69, 0));
-	// loadBoard(white, black, board);
-	// printBoard(board);
+	// // // struct Node *black = cons(47, cons(49, cons(62, cons(66, cons(80, cons(95, cons(96, cons(92, cons(96+16, cons(96+32, 0))))))))));
+	// // // struct Node *white = cons(50, cons(65, cons(64, cons(63, cons(78, cons(77, cons(81, cons(97, cons(98, cons(98+46, cons(4, cons(1, cons(2, cons(220, 0))))))))))))));
+	// //struct Node *white = cons(113, 0);
+	// //loadBoard(white, black, board);
+	// // printBoard(board);
+	// board[112] = 1;
 	// aiMove(board, 2);
-	// printBoard(board);
+	// // printBoard(board);
 	// int player = 2;
 	// int lev = 3;
 	// printf("final eval: %d", (TSS(board, player, 3)->fEval));
